@@ -10,8 +10,14 @@ import retrofit2.http.Path;
  */
 public interface IpmaService {
     /*
-    mandar um pedido HTTP GET
+    obter a previsao dos próximos 5 dia para a cidade city_id
      */
     @GET("forecast/meteorology/cities/daily/{city_id}.json")
     Call<IpmaCityForecast> getForecastForACity(@Path("city_id") int cityId);
+
+    /*
+        obter todas as cidades
+     */
+    @GET("distrits-islands.json")
+    Call<IpmaCity> getCities();
 }

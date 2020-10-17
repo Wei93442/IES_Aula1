@@ -5,31 +5,31 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import weather.ipma_client.CityForecast;
+import weather.ipma_client.IpmaCity;
 import weather.ipma_client.IpmaCityForecast;
 import weather.ipma_client.IpmaService;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.Scanner;
-import java.util.StringJoiner;
-import java.util.logging.Logger;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.logging.log4j.*;
 
 /**
  * demonstrates the use of the IPMA API for weather forecast
  */
 public class WeatherStarter {
-
-   // private static final int CITY_ID_AVEIRO = 1010500;
-    private static int CITY_ID_AVEIRO = 1010500;
     /*
     loggers provide a better alternative to System.out.println
     https://rules.sonarsource.com/java/tag/bad-practice/RSPEC-106
      */
-    private static final Logger logger = Logger.getLogger(WeatherStarter.class.getName());
+    private static final Logger logger =  LogManager.getLogger();
 
-    public static void  main(String[] args ) {
+    private static final IpmaService service;
 
+    private static final Map<String,Integer> citiesMap = new HashMap<>();
+
+    static {
         /*
         get a retrofit instance, loaded with the GSon lib to convert JSON into objects
          */
@@ -38,17 +38,16 @@ public class WeatherStarter {
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
-        IpmaService service = retrofit.create(IpmaService.class);
+        service = retrofit.create(IpmaService.class);
+        fillCityMap();
+    }
 
-        Scanner sc = new Scanner(System.in);
-        System.out.println("City ID : ");
-        try{
-            CITY_ID_AVEIRO = sc.nextInt();
-            sc.close();
-        }catch(Exception e){
-            logger.info("Default city id is 1010500(Aveiro)");
-        }
-        Call<IpmaCityForecast> callSync = service.getForecastForACity(CITY_ID_AVEIRO);
+    public static void  main(String[] args ){
+        Integer cityId = citiesMap.get(args[0]);
+        if (cityId == null)
+            cityId = 1010500;
+
+        Call<IpmaCityForecast> callSync = service.getForecastForACity(cityId);
 
         try {
             Response<IpmaCityForecast> apiResponse = callSync.execute();
@@ -90,6 +89,16 @@ public class WeatherStarter {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
 
+    private static void fillCityMap(){
+        Call<IpmaCity> cities = service.getCities();
+        try{
+            Response<IpmaCity> apiResponse = cities.execute();
+            IpmaCity forecast = apiResponse.body();
+            forecast.getData().forEach(city -> citiesMap.put(city.getLocal(),city.getGlobalIdLocal()));
+        }catch(Exception e){
+            e.printStackTrace();
+        }
     }
 }
